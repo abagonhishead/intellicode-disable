@@ -85,8 +85,16 @@ if ($PSCmdlet.ParameterSetName -eq 'explicit')
 }
 elseif ($PSCmdlet.ParameterSetName -eq 'autodetect')
 {
-  # Nested Join-Path for PSv5
-  $vsLocalAppDataRootPath = Join-Path (Join-Path $env:LOCALAPPDATA 'Microsoft') 'VisualStudio'
+  if ($PSVersionTable.PSVersion.Major -lt 7)
+  {
+    # Nested Join-Path for PSv5
+    $vsLocalAppDataRootPath = Join-Path (Join-Path $env:LOCALAPPDATA 'Microsoft') 'VisualStudio'
+  }
+  else
+  {
+    $vsLocalAppDataRootPath = Join-Path $env:LOCALAPPDATA 'Microsoft' 'VisualStudio'
+  }
+  
   Write-Verbose ('Autodetect mode -- using root settings directory path: {0}' -f $vsLocalAppDataRootPath)
   try
   {
@@ -134,8 +142,6 @@ if ($null -ne $file)
 
   if ($null -ne $xml)
   {
-    Write-Debug ('Successfully created backup -- continuing...')
-
     # There are much simpler, more efficient ways of doing this with an XPath expression I'm sure
     $elements = $xml.GetElementsByTagName('PropertyValue') | Where-Object { $SETTINGS.Keys -contains $PSItem.Name }
     $changed = $false
@@ -162,7 +168,7 @@ if ($null -ne $file)
       $backup = Copy-Item $file.FullName $backupPath -PassThru
       if ($null -ne $backup)
       {
-        Write-Verbose ('Saving changes to "{0}"' -f $file.FullName)
+        Write-Verbose ('Successfully created backup. Overwriting file with our changes at "{0}"' -f $file.FullName)
         $xml.Save($file.FullName)
       }
       else
